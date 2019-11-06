@@ -19,7 +19,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
         return X[self.attribute_names]
 
 
-# Inspired from stackoverflow.com/questions/25239958
+# Inspired by stackoverflow.com/questions/25239958
 class MostFrequentImputer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         self.most_frequent_ = pd.Series([X[c].value_counts().index[0] for c in X],
@@ -29,17 +29,14 @@ class MostFrequentImputer(BaseEstimator, TransformerMixin):
         return X.fillna(self.most_frequent_)
 
 
-script_directory = os.getcwd()
-DATA_DIRECTORY = "data/"
-full_data_path = os.path.join(script_directory, DATA_DIRECTORY)
-DATA_PATH = full_data_path
-FILE_NAME = "train.csv"
+DATA_PATH = "data/"
 
-def load_data(data_path=DATA_PATH, file_name=FILE_NAME) -> pd.DataFrame:
+def load_data(file_name: str, data_path=DATA_PATH) -> pd.DataFrame:
     csv_path = os.path.join(data_path, file_name)
     return pd.read_csv(csv_path)
 
 
+# Change this function to clean the data
 def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
     numeric_pipeline = Pipeline([
         ("select_numeric", DataFrameSelector(["Age", "SibSp", "Parch", "Fare"])),
@@ -58,15 +55,13 @@ def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
         ("num_pipeline", numeric_pipeline),
         ("cat_pipeline", category_pipeline),
     ])
-    
-    processed_data = preprocess_pipeline.fit_transform(data)
-    return processed_data
+    return preprocess_pipeline.fit_transform(data)
 
 
-def get_train_data(data_path=DATA_PATH, file_name=FILE_NAME) -> Tuple[np.ndarray, np.ndarray]:
-    data = load_data(data_path, file_name)
+def get_train_data(file_name: str, data_path=DATA_PATH) -> Tuple[np.ndarray, np.ndarray]:
+    data = load_data(file_name, data_path)
     X = get_independent_variable(data)
-    y = data.values[:,1]
+    y = data.values[:,1] # This changes with different datasets
     return (X, y)
     
 
