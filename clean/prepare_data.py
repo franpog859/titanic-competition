@@ -31,7 +31,7 @@ class MostFrequentImputer(BaseEstimator, TransformerMixin):
 
 DATA_PATH = "data/"
 
-def load_data(file_name: str, data_path=DATA_PATH) -> pd.DataFrame:
+def load_data(file_name: str, data_path: str=DATA_PATH) -> pd.DataFrame:
     csv_path = os.path.join(data_path, file_name)
     return pd.read_csv(csv_path)
 
@@ -58,10 +58,10 @@ def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
     return preprocess_pipeline.fit_transform(data)
 
 
-def get_train_data(file_name: str, data_path=DATA_PATH) -> Tuple[np.ndarray, np.ndarray]:
+def get_train_data(file_name: str, data_path: str=DATA_PATH) -> Tuple[np.ndarray, np.ndarray]:
     data = load_data(file_name, data_path)
     X = get_independent_variable(data)
-    y = data.values[:,1] # This changes with different datasets
+    y = data[["Survived"]] # This changes with different datasets
     return (X, y)
     
 

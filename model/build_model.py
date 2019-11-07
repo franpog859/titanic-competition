@@ -8,13 +8,13 @@ from model.models import Models
 
 MODEL_PATH = "model/bin/"
 
-def save_model(model, model_file_name: str, model_file_path=MODEL_PATH):
+def save_model(model, model_file_name: str, model_file_path: str=MODEL_PATH):
     full_file_name = os.path.join(model_file_path, model_file_name)
     with open(full_file_name, 'wb') as file:  
         pickle.dump(model, file)
 
 
-def load_model(model_file_name: str, model_file_path=MODEL_PATH):
+def load_model(model_file_name: str, model_file_path: str=MODEL_PATH):
     full_file_name = os.path.join(model_file_path, model_file_name)
     with open(full_file_name, 'rb') as file:
             model = pickle.load(file)
