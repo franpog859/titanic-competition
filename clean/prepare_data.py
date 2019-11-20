@@ -10,6 +10,25 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from typing import Tuple
 
 
+class TitleAdder(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        title_mapping = {"Mr": 1, "Miss": 2, "Mrs": 3, "Master": 4, "Rare": 5}
+        for row in [X]:
+            row['Title'] = row.Name.str.extract(' ([A-Za-z]+)\.', expand=False)
+
+            row['Title'] = row['Title'].replace(['Lady', 'Countess','Capt', 'Col',\
+ 	            'Don', 'Dr', 'Major', 'Rev', 'Sir', 'Jonkheer', 'Dona'], 'Rare')
+            row['Title'] = row['Title'].replace('Mlle', 'Miss')
+            row['Title'] = row['Title'].replace('Ms', 'Miss')
+            row['Title'] = row['Title'].replace('Mme', 'Mrs')
+            
+            row['Title'] = row['Title'].map(title_mapping)
+            row['Title'] = row['Title'].fillna(0)
+        return X
+
+
 class DataFrameSelector(BaseEstimator, TransformerMixin):
     def __init__(self, attribute_names):
         self.attribute_names = attribute_names
@@ -22,8 +41,10 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
 # Inspired by stackoverflow.com/questions/25239958
 class MostFrequentImputer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
-        self.most_frequent_ = pd.Series([X[c].value_counts().index[0] for c in X],
-                                        index=X.columns)
+        self.most_frequent_ = pd.Series(
+            [X[c].value_counts().index[0] for c in X],
+            index=X.columns
+        )
         return self
     def transform(self, X, y=None):
         return X.fillna(self.most_frequent_)
@@ -39,7 +60,8 @@ def load_data(file_name: str, data_path: str=DATA_PATH) -> pd.DataFrame:
 # Change this function to clean the data
 def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
     numeric_pipeline = Pipeline([
-        ("select_numeric", DataFrameSelector(["Age", "SibSp", "Parch", "Fare"])),
+        ("add_title", TitleAdder()),
+        ("select_numeric", DataFrameSelector(["Age", "SibSp", "Parch", "Fare", "Title"])),
         ("imputer", SimpleImputer(strategy="median")),
     ])
     numeric_pipeline.fit_transform(data)
@@ -61,7 +83,7 @@ def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
 def get_train_data(file_name: str, data_path: str=DATA_PATH) -> Tuple[np.ndarray, np.ndarray]:
     data = load_data(file_name, data_path)
     X = get_independent_variable(data)
-    y = data[["Survived"]] # This changes with different datasets
+    y = data["Survived"] # This changes with different datasets
     return (X, y)
     
 
