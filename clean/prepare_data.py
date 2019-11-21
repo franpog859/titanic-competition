@@ -6,15 +6,16 @@ from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
 from sklearn.base import BaseEstimator, TransformerMixin
 from typing import Tuple
 
 
-class TitleAdder(BaseEstimator, TransformerMixin):
+class NameToTitleConverter(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
     def transform(self, X):
-        title_mapping = {"Mr": 1, "Miss": 2, "Mrs": 3, "Master": 4, "Rare": 5}
         for row in [X]:
             row['Title'] = row.Name.str.extract(' ([A-Za-z]+)\.', expand=False)
 
@@ -24,18 +25,37 @@ class TitleAdder(BaseEstimator, TransformerMixin):
             row['Title'] = row['Title'].replace('Ms', 'Miss')
             row['Title'] = row['Title'].replace('Mme', 'Mrs')
             
-            row['Title'] = row['Title'].map(title_mapping)
             row['Title'] = row['Title'].fillna(0)
+        X = X.drop(["Name"], axis=1)
         return X
 
 
-class DataFrameSelector(BaseEstimator, TransformerMixin):
-    def __init__(self, attribute_names):
-        self.attribute_names = attribute_names
+class AgeBinner(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
-    def transform(self, X):
-        return X[self.attribute_names]
+    def transform(self, X, y=None):
+        X['AgeBand'] = pd.cut(X['Age'], bins=[0, 5, 18, 30, 38, 50, 65, 74.3, 90])
+        X = X.drop(["Age"], axis=1)
+        return X
+
+
+class FareBinner(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X, y=None):
+        X['FareBand'] = pd.qcut(X['Fare'], 4)
+        X = X.drop(["Fare"], axis=1)
+        return X
+
+
+class IsAloneAdder(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X, y=None):
+        X['IsAlone'] = X['SibSp'] + X['Parch'] > 0
+        X = X.drop(["SibSp"], axis=1)
+        X = X.drop(["Parch"], axis=1)
+        return X
 
 
 # Inspired by stackoverflow.com/questions/25239958
@@ -59,25 +79,28 @@ def load_data(file_name: str, data_path: str=DATA_PATH) -> pd.DataFrame:
 
 # Change this function to clean the data
 def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
-    numeric_pipeline = Pipeline([
-        ("add_title", TitleAdder()),
-        ("select_numeric", DataFrameSelector(["Age", "SibSp", "Parch", "Fare", "Title"])),
-        ("imputer", SimpleImputer(strategy="median")),
-    ])
-    numeric_pipeline.fit_transform(data)
-
+    cat_attribs = ["Pclass", "Sex", "Embarked", "Name", "Age", "Parch", "SibSp", "Fare"]
     category_pipeline = Pipeline([
-        ("select_cat", DataFrameSelector(["Pclass", "Sex", "Embarked"])),
+        ("name_to_title", NameToTitleConverter()),
+        ("age_binner", AgeBinner()),
+        ("fare_binner", FareBinner()),
+        ("is_alone_adder", IsAloneAdder()),
         ("imputer", MostFrequentImputer()),
         ("cat_encoder", OneHotEncoder(sparse=False)),
     ])
-    category_pipeline.fit_transform(data)
 
-    preprocess_pipeline = FeatureUnion(transformer_list=[
-        ("num_pipeline", numeric_pipeline),
-        ("cat_pipeline", category_pipeline),
+    num_attribs = ["SibSp", "Parch", "Fare", "Age"]
+    numeric_pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("std_scaler", StandardScaler()),
     ])
-    return preprocess_pipeline.fit_transform(data)
+
+    full_pipeline = ColumnTransformer([
+        ("cat", category_pipeline, cat_attribs),
+        ("num", numeric_pipeline, num_attribs),
+    ])
+
+    return full_pipeline.fit_transform(data)
 
 
 def get_train_data(file_name: str, data_path: str=DATA_PATH) -> Tuple[np.ndarray, np.ndarray]:
