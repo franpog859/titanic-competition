@@ -24,7 +24,6 @@ class NameToTitleConverter(BaseEstimator, TransformerMixin):
             row['Title'] = row['Title'].replace('Mme', 'Mrs')
             
             row['Title'] = row['Title'].fillna(0)
-        X = X.drop(["Name"], axis=1)
         return X
 
 
@@ -33,7 +32,6 @@ class AgeBinner(BaseEstimator, TransformerMixin):
         return self
     def transform(self, X, y=None):
         X['AgeBand'] = pd.cut(X['Age'], bins=[0, 5, 18, 30, 38, 50, 65, 74.3, 90])
-        X = X.drop(["Age"], axis=1)
         return X
 
 
@@ -42,7 +40,6 @@ class FareBinner(BaseEstimator, TransformerMixin):
         return self
     def transform(self, X, y=None):
         X['FareBand'] = pd.qcut(X['Fare'], 4)
-        X = X.drop(["Fare"], axis=1)
         return X
 
 
@@ -51,8 +48,6 @@ class IsAloneAdder(BaseEstimator, TransformerMixin):
         return self
     def transform(self, X, y=None):
         X['IsAlone'] = X['SibSp'] + X['Parch'] > 0
-        X = X.drop(["SibSp"], axis=1)
-        X = X.drop(["Parch"], axis=1)
         return X
 
 
@@ -61,8 +56,16 @@ class FamilySizeAdder(BaseEstimator, TransformerMixin):
         return self
     def transform(self, X, y=None):
         X['FamilySize'] = X['SibSp'] + X['Parch'] + 1
-        X = X.drop(["SibSp"], axis=1)
-        X = X.drop(["Parch"], axis=1)
+        return X
+
+
+class AttributesDropper(BaseEstimator, TransformerMixin):
+    def __init__(self, attribute_names):
+        self.attribute_names = attribute_names
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        X = X.drop(self.attribute_names, axis=1)
         return X
 
 
@@ -93,6 +96,7 @@ def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
         ("age_binner", AgeBinner()),
         ("fare_binner", FareBinner()),
         ("is_alone_adder", IsAloneAdder()),
+        ("attributes_dropper", AttributesDropper(["SibSp", "Parch", "Fare", "Age", "Name"])),
         ("imputer", MostFrequentImputer()),
         ("cat_encoder", OneHotEncoder(sparse=False)),
     ])
@@ -100,6 +104,7 @@ def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
     num_attribs = ["SibSp", "Parch", "Fare", "Age"]
     numeric_pipeline = Pipeline([
         ("family_size_adder", FamilySizeAdder()),
+        ("attributes_dropper", AttributesDropper(["SibSp", "Parch"])),
         ("imputer", SimpleImputer(strategy="median")),
         ("std_scaler", StandardScaler()),
     ])
