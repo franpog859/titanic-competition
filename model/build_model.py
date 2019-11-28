@@ -29,10 +29,10 @@ def build_model(model, model_file_name: str, data_file_name: str):
 
 
 # Change this function to tune the model
-def build_tuned_model():
-    model_name = "RandomForestClf_nEs100_rS42"
-
-    model, file_name = Models().dict[model_name]
+MODEL_NAME = "SVC_tuned"
+def build_tuned_model(model_name: str=MODEL_NAME):
+    model = Models().dict[model_name]
+    file_name = "{}.pkl".format(model_name)
 
     return build_model(
         model=model,

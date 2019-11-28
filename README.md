@@ -1,6 +1,6 @@
 # Titanic Competition
 
-[![Kaggle Score](https://img.shields.io/badge/score-75.60%25-blue)](https://www.kaggle.com/franpogoda)
+[![Kaggle Score](https://img.shields.io/badge/score-78.47%25-blue)](https://www.kaggle.com/franpogoda)
 
 Titanic is a well known Kaggle competition you can find [here](https://www.kaggle.com/c/titanic/overview). Its description says "Start here! Predict survival on the Titanic and get familiar with ML basics" so I started here.
 

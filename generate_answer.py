@@ -18,7 +18,7 @@ def main():
     X = get_independent_variable(data)
 
     print("Predicting...")
-    model = load_model("RandomForestClf_nEs100_rS42.pkl")
+    model = load_model("SVC_tuned.pkl")
     y_predicted = model.predict(X)
 
     print("Saving answers...")

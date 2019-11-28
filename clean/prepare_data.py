@@ -2,14 +2,12 @@
 import os
 import pandas as pd
 import numpy as np
-from sklearn.pipeline import FeatureUnion
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.pipeline import Pipeline
+from typing import Tuple
+from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.base import BaseEstimator, TransformerMixin
-from typing import Tuple
 
 
 class NameToTitleConverter(BaseEstimator, TransformerMixin):
@@ -58,6 +56,16 @@ class IsAloneAdder(BaseEstimator, TransformerMixin):
         return X
 
 
+class FamilySizeAdder(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X, y=None):
+        X['FamilySize'] = X['SibSp'] + X['Parch'] + 1
+        X = X.drop(["SibSp"], axis=1)
+        X = X.drop(["Parch"], axis=1)
+        return X
+
+
 # Inspired by stackoverflow.com/questions/25239958
 class MostFrequentImputer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
@@ -91,6 +99,7 @@ def get_independent_variable(data: pd.DataFrame) -> np.ndarray:
 
     num_attribs = ["SibSp", "Parch", "Fare", "Age"]
     numeric_pipeline = Pipeline([
+        ("family_size_adder", FamilySizeAdder()),
         ("imputer", SimpleImputer(strategy="median")),
         ("std_scaler", StandardScaler()),
     ])
